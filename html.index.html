@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentes de IA — Cases que Mudam o Jogo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=IBM+Plex+Mono:wght@300;400;500&family=Cormorant:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink: #151410;
+    --paper: #f4ede0;
+    --paper-dim: #ede4d2;
+    --forest: #253d30;
+    --forest-mid: #2f5040;
+    --amber: #b97330;
+    --amber-light: #d4924a;
+    --ash: #7a7060;
+    --ash-light: #a89e8e;
+    --rule: rgba(37,61,48,0.18);
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.5;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100svh;
+    background: var(--forest);
+    display: grid;
+    grid-template-rows: 1fr auto;
+    position: relative;
+    overflow: hidden;
+    padding: 0 6vw;
+  }
+
+  .hero-bg-text {
+    position: absolute;
+    bottom: -4vw;
+    left: -2vw;
+    font-family: var(--serif);
+    font-size: clamp(100px, 22vw, 280px);
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(255,255,255,0.04);
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-lines {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.08);
+  }
+  .hero-lines::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -80px; bottom: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.05);
+  }
+
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 12vh;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--amber-light);
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.2s forwards;
+  }
+  .hero-label::before {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: var(--amber-light);
+  }
+
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(52px, 8vw, 110px);
+    font-weight: 300;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    color: var(--paper);
+    max-width: 14ch;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.4s forwards;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--amber-light);
+  }
+
+  .hero-sub {
+    margin-top: 3rem;
+    font-family: var(--serif);
+    font-size: clamp(16px, 1.6vw, 22px);
+    font-weight: 300;
+    color: rgba(244,237,224,0.55);
+    max-width: 48ch;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.7s forwards;
+  }
+
+  .hero-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 5vh;
+    position: relative;
+    z-index: 2;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 1s forwards;
+  }
+
+  .hero-nav {
+    display: flex;
+    gap: 3rem;
+    list-style: none;
+  }
+  .hero-nav a {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(244,237,224,0.4);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .hero-nav a:hover { color: var(--amber-light); }
+
+  .hero-scroll {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(244,237,224,0.3);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .hero-scroll::after {
+    content: '';
+    width: 1px;
+    height: 48px;
+    background: linear-gradient(to bottom, rgba(244,237,224,0.3), transparent);
+    display: block;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* ── SEGMENTS ── */
+  .segment {
+    padding: 12vh 6vw;
+    border-top: 1px solid var(--rule);
+    position: relative;
+  }
+
+  .segment:nth-child(odd) { background: var(--paper); }
+  .segment:nth-child(even) { background: var(--paper-dim); }
+
+  .segment-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 2rem;
+    margin-bottom: 8vh;
+  }
+
+  .segment-index {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 0.15em;
+  }
+
+  .segment-title {
+    font-family: var(--serif);
+    font-size: clamp(42px, 6vw, 88px);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--forest);
+  }
+  .segment-title em {
+    font-style: italic;
+    color: var(--amber);
+  }
+
+  .segment-line {
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+    align-self: center;
+  }
+
+  .segment-descriptor {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ash-light);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    align-self: flex-start;
+  }
+
+  /* ── CASE GRID ── */
+  .cases-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr));
+    gap: 2px;
+  }
+
+  .case-card {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 3.5rem;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .case-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .case-card:hover { transform: scale(1.01); z-index: 1; }
+
+  .case-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--amber), var(--forest-mid));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+  }
+  .case-card:hover::before { transform: scaleX(1); }
+
+  .case-card--accent {
+    background: var(--forest);
+  }
+
+  .case-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--amber-light);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .case-tag::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--amber-light);
+    opacity: 0.6;
+  }
+
+  .case-number {
+    position: absolute;
+    top: 3rem;
+    right: 3.5rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(244,237,224,0.15);
+    letter-spacing: 0.1em;
+  }
+
+  .case-title {
+    font-family: var(--serif);
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--paper);
+    margin-bottom: 1.2rem;
+  }
+  .case-title em {
+    font-style: italic;
+    color: var(--amber-light);
+  }
+
+  .case-desc {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.75;
+    color: rgba(244,237,224,0.62);
+    margin-bottom: 2.5rem;
+  }
+
+  .case-metrics {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(244,237,224,0.08);
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .metric-value {
+    font-family: var(--mono);
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 500;
+    color: var(--amber-light);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(244,237,224,0.35);
+  }
+
+  .case-how {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255,255,255,0.04);
+    border-left: 2px solid var(--amber);
+  }
+
+  .case-how-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--amber-light);
+    margin-bottom: 0.8rem;
+    opacity: 0.7;
+  }
+
+  .case-how-text {
+    font-family: var(--serif);
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: rgba(244,237,224,0.5);
+  }
+
+  /* WIDE CARD */
+  .case-card--wide {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  .case-card--wide .case-left {}
+  .case-card--wide .case-right {
+    padding-top: 4rem;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--rule);
+    margin: 0 6vw;
+  }
+
+  /* ── CLOSING ── */
+  .closing {
+    background: var(--ink);
+    padding: 16vh 6vw;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .closing::before {
+    content: 'AGENTES';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--serif);
+    font-size: clamp(80px, 18vw, 240px);
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(255,255,255,0.025);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .closing-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 2rem;
+  }
+
+  .closing-title {
+    font-family: var(--serif);
+    font-size: clamp(38px, 5.5vw, 76px);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--paper);
+    max-width: 20ch;
+    margin: 0 auto 2rem;
+  }
+  .closing-title em { font-style: italic; color: var(--amber-light); }
+
+  .closing-sub {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 300;
+    color: rgba(244,237,224,0.4);
+    max-width: 44ch;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+
+  .closing-rule {
+    width: 60px;
+    height: 1px;
+    background: var(--amber);
+    margin: 3rem auto;
+    opacity: 0.5;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .hero-footer { flex-direction: column; gap: 2rem; }
+    .hero-nav { flex-wrap: wrap; gap: 1.5rem; }
+    .segment-header { grid-template-columns: auto 1fr; }
+    .segment-descriptor { display: none; }
+    .case-card--wide { grid-template-columns: 1fr; }
+    .case-card--wide .case-right { padding-top: 0; }
+    .case-card { padding: 2.5rem; }
+    .case-metrics { gap: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HERO ══════════════ -->
+<section class="hero">
+  <div class="hero-lines"></div>
+  <div class="hero-bg-text">Agentes</div>
+
+  <div class="hero-content">
+    <div class="hero-label">Plexo — Inteligência Aplicada · Vol. I</div>
+    <h1 class="hero-title">
+      Agentes de IA<br>
+      que <em>mudam</em><br>
+      o jogo
+    </h1>
+    <p class="hero-sub">
+      Os cases mais disruptivos de automação inteligente para vendas, infoprodutores e mentores — com impacto mensurável e aplicação imediata.
+    </p>
+  </div>
+
+  <div class="hero-footer">
+    <nav>
+      <ul class="hero-nav">
+        <li><a href="#vendas">01 — Vendas</a></li>
+        <li><a href="#infoprod">02 — Infoprodutores</a></li>
+        <li><a href="#mentores">03 — Mentores</a></li>
+      </ul>
+    </nav>
+    <div class="hero-scroll">Scroll</div>
+  </div>
+</section>
+
+<!-- ══════════════ VENDAS ══════════════ -->
+<section class="segment" id="vendas">
+  <div class="segment-header">
+    <span class="segment-index">01</span>
+    <h2 class="segment-title">Ven<em>das</em></h2>
+    <div class="segment-line"></div>
+    <span class="segment-descriptor">Sales Intelligence</span>
+  </div>
+
+  <div class="cases-grid">
+
+    <!-- CARD 1 -->
+    <div class="case-card">
+      <span class="case-number">01.01</span>
+      <div class="case-tag">SDR Autônomo</div>
+      <h3 class="case-title">O Vendedor que<br><em>nunca dorme</em></h3>
+      <p class="case-desc">Um agente de prospecção que pesquisa leads, analisa o perfil ideal de cliente, escreve mensagens hiperpersonalizadas e agenda reuniões — de forma completamente autônoma, 24 horas por dia.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">312%</span>
+          <span class="metric-label">Aumento em pipeline</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">-78%</span>
+          <span class="metric-label">Custo por reunião</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">4.2×</span>
+          <span class="metric-label">Taxa de resposta</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">O agente acessa LinkedIn, Apollo e bases internas, cruza dados com o ICP definido, cria sequências personalizadas por indústria e seniority, e move o lead para o CRM ao menor sinal de interesse.</div>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="case-card case-card--accent">
+      <span class="case-number">01.02</span>
+      <div class="case-tag">Real-Time Coaching</div>
+      <h3 class="case-title">Inteligência<br><em>durante a call</em></h3>
+      <p class="case-desc">Um agente que monitora conversas de vendas em tempo real, detecta objeções, sentimento e pontos de resistência — e sugere respostas ao vendedor em milissegundos via overlay discreto na tela.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+41%</span>
+          <span class="metric-label">Taxa de fechamento</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">-60 dias</span>
+          <span class="metric-label">Ramp de novos SDRs</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">2.8×</span>
+          <span class="metric-label">NPS dos clientes</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">STT processa áudio em tempo real → agente classifica a objeção e busca na base de conhecimento → exibe a melhor resposta validada pelos top performers da equipe.</div>
+      </div>
+    </div>
+
+    <!-- CARD 3 — WIDE -->
+    <div class="case-card case-card--wide">
+      <div class="case-left">
+        <span class="case-number">01.03</span>
+        <div class="case-tag">Nurturing Preditivo</div>
+        <h3 class="case-title">Lead certo,<br><em>momento exato</em></h3>
+        <p class="case-desc">Um agente que monitora continuamente sinais comportamentais dos leads — visitas ao site, abertura de emails, atividade no LinkedIn, mudança de cargo — e ativa abordagens no momento de maior intenção de compra, antes que a janela se feche.</p>
+        <div class="case-how">
+          <div class="case-how-label">Como funciona</div>
+          <div class="case-how-text">O agente agrega sinais de múltiplas fontes (CRM, GA4, Apollo, LinkedIn Sales Nav), calcula um "Intent Score" dinâmico e aciona o rep com contexto completo ou dispara uma cadência automatizada quando o score ultrapassa o limiar configurado.</div>
+        </div>
+      </div>
+      <div class="case-right">
+        <div class="case-metrics" style="flex-direction:column; gap:2rem; border-top:none; padding-top:0;">
+          <div class="metric">
+            <span class="metric-value">+220%</span>
+            <span class="metric-label">Conversão de leads mornos</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">-45%</span>
+            <span class="metric-label">Ciclo de vendas</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">9.1×</span>
+            <span class="metric-label">ROI sobre a stack de dados</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">38%</span>
+            <span class="metric-label">Leads reativados em 90 dias</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="case-card">
+      <span class="case-number">01.04</span>
+      <div class="case-tag">Proposta Inteligente</div>
+      <h3 class="case-title">Proposta<br><em>de 3 min</em></h3>
+      <p class="case-desc">Após a reunião de discovery, o agente processa as notas, o perfil do cliente e o histórico da empresa — e entrega uma proposta comercial personalizada, com precificação dinâmica, em minutos.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+58%</span>
+          <span class="metric-label">Taxa de aceite</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">-94%</span>
+          <span class="metric-label">Tempo de elaboração</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">O agente acessa o transcript da call, o LinkedIn da empresa, dados de mercado e o banco de cases — e gera uma proposta em HTML ou PDF com argumentos mapeados às dores específicas mencionadas na reunião.</div>
+      </div>
+    </div>
+
+    <!-- CARD 5 -->
+    <div class="case-card case-card--accent">
+      <span class="case-number">01.05</span>
+      <div class="case-tag">Pipeline Intelligence</div>
+      <h3 class="case-title">Forecast que<br><em>realmente acerta</em></h3>
+      <p class="case-desc">Um agente analisa todo o histórico de deals ganhos e perdidos, identifica padrões invisíveis ao time e gera previsões de receita com precisão cirúrgica — além de apontar os riscos de cada deal ativo.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">92%</span>
+          <span class="metric-label">Precisão de forecast</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">+33%</span>
+          <span class="metric-label">Win rate geral</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">5×</span>
+          <span class="metric-label">Velocidade de QBR</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">Machine learning treinado no histórico do CRM + análise de sentimento nos emails de negociação + sinais de engajamento → score de saúde do deal com plano de ação gerado automaticamente.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ INFOPRODUTORES ══════════════ -->
+<section class="segment" id="infoprod">
+  <div class="segment-header">
+    <span class="segment-index">02</span>
+    <h2 class="segment-title">Info<em>produtores</em></h2>
+    <div class="segment-line"></div>
+    <span class="segment-descriptor">Digital Products</span>
+  </div>
+
+  <div class="cases-grid">
+
+    <!-- CARD 1 — WIDE -->
+    <div class="case-card case-card--wide">
+      <div class="case-left">
+        <span class="case-number">02.01</span>
+        <div class="case-tag">Content Multiplication</div>
+        <h3 class="case-title">Uma aula.<br><em>Cinquenta formatos.</em></h3>
+        <p class="case-desc">Um agente transforma uma única gravação de aula em um ecossistema completo de conteúdo: posts para Instagram, threads para X, newsletter, shorts para YouTube, carrosséis, áudio para podcast e snippets para anúncios — mantendo a voz e a autoridade do criador em todos os formatos.</p>
+        <div class="case-how">
+          <div class="case-how-label">Como funciona</div>
+          <div class="case-how-text">O agente transcreve a aula, extrai os conceitos-chave, identifica os momentos de maior impacto e adota o estilo editorial do criador (aprendido com base de conteúdos anteriores) para reescrever em cada formato — sem parecer robótico.</div>
+        </div>
+      </div>
+      <div class="case-right">
+        <div class="case-metrics" style="flex-direction:column; gap:2rem; border-top:none; padding-top:0;">
+          <div class="metric">
+            <span class="metric-value">50+</span>
+            <span class="metric-label">Peças por aula</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">-96%</span>
+            <span class="metric-label">Tempo de produção</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">6×</span>
+            <span class="metric-label">Alcance orgânico</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">+180%</span>
+            <span class="metric-label">Leads via conteúdo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="case-card">
+      <span class="case-number">02.02</span>
+      <div class="case-tag">Student Success</div>
+      <h3 class="case-title">Tutor 24/7<br><em>sem equipe</em></h3>
+      <p class="case-desc">Um agente treinado no conteúdo do curso responde dúvidas dos alunos a qualquer hora, acompanha o progresso individual e envia nudges personalizados para quem está travado — multiplicando o completion rate sem ampliar o suporte.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+74%</span>
+          <span class="metric-label">Completion rate</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">-80%</span>
+          <span class="metric-label">Tickets de suporte</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">4.9★</span>
+          <span class="metric-label">Satisfação dos alunos</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">RAG sobre o conteúdo do curso + dados de progresso do aluno → agente personaliza respostas, identifica padrões de desistência e gera relatórios semanais para o produtor sobre pontos de atrito no curso.</div>
+      </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="case-card case-card--accent">
+      <span class="case-number">02.03</span>
+      <div class="case-tag">Launch Orchestration</div>
+      <h3 class="case-title">Lançamento<br><em>no piloto automático</em></h3>
+      <p class="case-desc">Um agente coordena toda a operação de um lançamento: sequência de emails, copy de anúncios, respostas nos grupos, nutrição de leads quentes e relatório em tempo real — com adaptações táticas baseadas em dados de abertura, clique e conversão.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+140%</span>
+          <span class="metric-label">Receita por lançamento</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">-70%</span>
+          <span class="metric-label">Horas operacionais</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">3.2×</span>
+          <span class="metric-label">ROAS de campanhas</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">O agente monta e monitora todos os fluxos no Active Campaign/Klaviyo, recalibra a régua com base em comportamento real-time, identifica quem está quente e prioriza esforço humano nas conversas de maior potencial.</div>
+      </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="case-card">
+      <span class="case-number">02.04</span>
+      <div class="case-tag">Adaptive Learning</div>
+      <h3 class="case-title">Jornada<br><em>que se adapta</em></h3>
+      <p class="case-desc">O agente analisa o perfil, o nível de conhecimento prévio e o comportamento de consumo de cada aluno — e reorganiza dinamicamente o curso, recomendando caminhos personalizados que maximizam o aprendizado e minimizam o abandono.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+91%</span>
+          <span class="metric-label">Engajamento</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">2.1×</span>
+          <span class="metric-label">Resultados declarados</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">+45%</span>
+          <span class="metric-label">LTV do aluno</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">Quiz inicial + dados de consumo das aulas + testes intermediários → agente mapeia gaps de conhecimento e sugere (ou automaticamente destrava) módulos extras, bônus e materiais de apoio específicos para aquele perfil.</div>
+      </div>
+    </div>
+
+    <!-- CARD 5 -->
+    <div class="case-card case-card--accent">
+      <span class="case-number">02.05</span>
+      <div class="case-tag">Affiliate Intelligence</div>
+      <h3 class="case-title">Afiliados que<br><em>vendem de verdade</em></h3>
+      <p class="case-desc">Um agente que recruta, onborda e ativa afiliados automaticamente: entrega materiais personalizados, responde dúvidas de copy, monitora performance e aciona os top performers com bonificações e campanhas especiais.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+260%</span>
+          <span class="metric-label">Afiliados ativos</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">4.4×</span>
+          <span class="metric-label">Vendas via afiliados</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">Integração com Hotmart/Eduzz + agente de WhatsApp → identifica afiliados com maior potencial, entrega kits de copy personalizados por nicho do afiliado e gera relatórios semanais de performance automaticamente.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ MENTORES ══════════════ -->
+<section class="segment" id="mentores">
+  <div class="segment-header">
+    <span class="segment-index">03</span>
+    <h2 class="segment-title">Men<em>tores</em></h2>
+    <div class="segment-line"></div>
+    <span class="segment-descriptor">Mentorship Scale</span>
+  </div>
+
+  <div class="cases-grid">
+
+    <!-- CARD 1 -->
+    <div class="case-card">
+      <span class="case-number">03.01</span>
+      <div class="case-tag">Deep Diagnostic</div>
+      <h3 class="case-title">Sessão preparada<br><em>antes de começar</em></h3>
+      <p class="case-desc">Um agente analisa o negócio do mentorado antes de cada sessão: lê os relatórios enviados, cruza com o histórico de conversas anteriores, identifica os pontos mais críticos e entrega ao mentor um briefing com perguntas cirúrgicas e dados de contexto.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+85%</span>
+          <span class="metric-label">Qualidade percebida</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">-40 min</span>
+          <span class="metric-label">Prep por sessão</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">10×</span>
+          <span class="metric-label">Profundidade de análise</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">O mentorado preenche um formulário pré-sessão → agente processa junto com histórico e dados de negócio → gera um "Briefing de Sessão" com os 3 pontos mais críticos, tendências identificadas e perguntas recomendadas para o mentor.</div>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="case-card case-card--accent">
+      <span class="case-number">03.02</span>
+      <div class="case-tag">Between Sessions</div>
+      <h3 class="case-title">O mentor que<br><em>não some</em></h3>
+      <p class="case-desc">Entre as sessões, um agente mantém o mentorado em movimento: faz check-ins sobre as ações acordadas, detecta quando ele trava, oferece recursos específicos para o desafio atual e escala para o mentor humano apenas quando necessário.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+230%</span>
+          <span class="metric-label">Taxa de execução</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">-65%</span>
+          <span class="metric-label">Churn de mentorados</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">3.7×</span>
+          <span class="metric-label">Resultados declarados</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">Após cada sessão, o agente extrai os compromissos firmados, agenda check-ins via WhatsApp/email, monitora respostas e gera um "Progress Report" para o mentor antes da próxima sessão — sem esforço adicional.</div>
+      </div>
+    </div>
+
+    <!-- CARD 3 — WIDE -->
+    <div class="case-card case-card--wide">
+      <div class="case-left">
+        <span class="case-number">03.03</span>
+        <div class="case-tag">Mentoria em Escala</div>
+        <h3 class="case-title">Um mentor.<br><em>Dez vezes mais mentorados.</em></h3>
+        <p class="case-desc">Um sistema de agentes que permite ao mentor atender 10× mais pessoas sem perder a qualidade ou a personalização. O agente entrega a maior parte do valor da mentoria — diagnóstico, recursos, frameworks, accountability — enquanto o mentor humano foca no que só ele pode fazer: estratégia, network e decisões de alta complexidade.</p>
+        <div class="case-how">
+          <div class="case-how-label">Como funciona</div>
+          <div class="case-how-text">Arquitetura multi-agente: agente de onboarding, agente de diagnóstico contínuo, agente de conteúdo personalizado e agente de escalation definem juntos quando e como o mentor humano precisa intervir — garantindo alta qualidade com baixo custo operacional.</div>
+        </div>
+      </div>
+      <div class="case-right">
+        <div class="case-metrics" style="flex-direction:column; gap:2rem; border-top:none; padding-top:0;">
+          <div class="metric">
+            <span class="metric-value">10×</span>
+            <span class="metric-label">Capacidade de mentorados</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">+400%</span>
+            <span class="metric-label">Receita do programa</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">-55%</span>
+            <span class="metric-label">Horas do mentor</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">4.8★</span>
+            <span class="metric-label">Satisfação média</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="case-card">
+      <span class="case-number">03.04</span>
+      <div class="case-tag">Memory & Context</div>
+      <h3 class="case-title">Memória<br><em>institucional viva</em></h3>
+      <p class="case-desc">Um agente mantém um registro estruturado e pesquisável de todo o histórico de cada mentorado: decisões tomadas, hipóteses testadas, resultados obtidos, bloqueios recorrentes e evolução ao longo do tempo — tornando cada sessão mais precisa e personalizada.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">100%</span>
+          <span class="metric-label">Contexto retido</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">+112%</span>
+          <span class="metric-label">Precisão das recomendações</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">Cada sessão é transcrita e processada pelo agente → extrai decisões, aprendizados e próximos passos → alimenta uma base vetorial pesquisável → gera "timeline de evolução" e detecta padrões de bloqueio recorrentes em cada mentorado.</div>
+      </div>
+    </div>
+
+    <!-- CARD 5 -->
+    <div class="case-card case-card--accent">
+      <span class="case-number">03.05</span>
+      <div class="case-tag">Community Intelligence</div>
+      <h3 class="case-title">Comunidade que<br><em>gera resultados</em></h3>
+      <p class="case-desc">Um agente modera e ativa a comunidade de mentorados: identifica quem pode ajudar quem, facilita conexões estratégicas, detecta perguntas sem resposta e destaca os membros que mais cresceram — criando uma rede viva de valor entre os mentorados.</p>
+      <div class="case-metrics">
+        <div class="metric">
+          <span class="metric-value">+380%</span>
+          <span class="metric-label">Engajamento na comunidade</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">2.9×</span>
+          <span class="metric-label">Conexões geradas/mês</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value">+55%</span>
+          <span class="metric-label">Renovações do programa</span>
+        </div>
+      </div>
+      <div class="case-how">
+        <div class="case-how-label">Como funciona</div>
+        <div class="case-how-text">O agente monitora as interações na comunidade (Slack, Discord, Circle), mapeia o perfil e os desafios de cada membro e gera matchings semanais do tipo "João, você deveria conversar com Maria — ela resolveu exatamente o problema que você está enfrentando."</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ CLOSING ══════════════ -->
+<section class="closing">
+  <div class="closing-label">A janela está aberta</div>
+  <h2 class="closing-title">Os que implementam <em>agora</em> definem as regras do próximo ciclo</h2>
+  <div class="closing-rule"></div>
+  <p class="closing-sub">Agentes de IA não são uma vantagem competitiva temporária. São a nova infraestrutura de negócios. A pergunta não é <em>se</em> implementar — é quão cedo.</p>
+</section>
+
+<script>
+  // Scroll-triggered card reveal
+  const cards = document.querySelectorAll('.case-card');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, 80 * [...cards].indexOf(entry.target) % 3 * 100);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+  cards.forEach(card => observer.observe(card));
+
+  // Staggered reveal within view
+  document.querySelectorAll('.case-card').forEach((card, i) => {
+    card.style.transitionDelay = `${(i % 2) * 0.12}s`;
+  });
+</script>
+
+</body>
+</html>
